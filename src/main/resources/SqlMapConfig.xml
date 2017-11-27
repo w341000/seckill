@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE configuration
+PUBLIC "-//mybatis.org//DTD Config 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-config.dtd">
+<configuration>
+	
+	<settings>
+		<!-- 对所有resultMap都自动映射(包括嵌套,即一对一或一对多等关联关系) -->
+		<setting name="autoMappingBehavior" value="FULL"/>
+	</settings> 
+	
+	<!-- 自定义别名 -->
+	<typeAliases>
+		<!-- package:指定包名称来为包下的pojo类申明别名,默认的别名是类名(首字母大小写均可) -->
+		<package name="org.seckill.pojo"/>
+	</typeAliases>
+</configuration>

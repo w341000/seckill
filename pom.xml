@@ -11,7 +11,7 @@
   	<dependency>
   		<artifactId>junit</artifactId>
   		<groupId>junit</groupId>
-  		<version>4.11</version>
+  		<version>4.12</version>
   		<scope>test</scope>
   	</dependency>
   	<!-- 日志 -->
@@ -48,7 +48,12 @@
 	    <version>${spring.version}</version>
 	    <scope>test</scope>
 	</dependency>
-      
+      <!--aspectjweaver包 -->
+        <dependency>
+            <groupId>org.aspectj</groupId>
+            <artifactId>aspectjweaver</artifactId>
+            <version>1.8.5</version>
+        </dependency>
 		<!-- json -->
 		<dependency>
         <groupId>com.fasterxml.jackson.core</groupId>
@@ -88,9 +93,10 @@
 		</dependency>
 		<!-- 数据库连接池 -->
 		<dependency>
-		    <groupId>com.mchange</groupId>
-		    <artifactId>c3p0</artifactId>
-		    <version>0.9.5</version>
-		</dependency>
+        <groupId>com.alibaba</groupId>
+        <artifactId>druid</artifactId>
+        <version>1.0.9</version>
+      </dependency>
+		
   </dependencies>
 </project>
