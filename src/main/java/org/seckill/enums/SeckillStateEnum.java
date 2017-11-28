@@ -18,7 +18,7 @@ public enum SeckillStateEnum {
 	/**
 	 * 系统异常
 	 */
-	INNER_KILL(-2,"系统异常"),
+	INNER_ERROR(-2,"系统异常"),
 	/**
 	 * 数据被篡改
 	 */

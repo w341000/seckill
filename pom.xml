@@ -58,7 +58,7 @@
 		<dependency>
         <groupId>com.fasterxml.jackson.core</groupId>
         <artifactId>jackson-databind</artifactId>
-        <version>2.4.2</version>
+        <version>2.7.0</version>
       </dependency>
       <!-- mybatis -->
       <dependency>
@@ -85,6 +85,11 @@
 		    <version>2.0</version>
 		    <scope>provided</scope>
 		</dependency>
+		<dependency>
+            <groupId>javax.servlet</groupId>
+            <artifactId>jstl</artifactId>
+            <version>1.2</version>
+        </dependency> 
 			<!-- mysql驱动 -->
         <dependency>
 			<groupId>mysql</groupId>
@@ -99,4 +104,20 @@
       </dependency>
 		
   </dependencies>
+    <build>
+  <plugins>
+				<!-- 配置Tomcat插件 -->
+				<plugin>
+					<groupId>org.apache.tomcat.maven</groupId>
+					<artifactId>tomcat7-maven-plugin</artifactId>
+					<configuration>
+		           		<port>8080</port>
+			             <path>/</path>
+			              <uriEncoding>UTF-8</uriEncoding>
+			               <finalName>mgr</finalName>
+			              <server>tomcat7</server>
+			       </configuration>
+				</plugin>
+			</plugins>
+  </build>
 </project>
