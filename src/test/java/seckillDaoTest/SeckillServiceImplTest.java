@@ -29,7 +29,7 @@ public class SeckillServiceImplTest extends BaseJunit4Test {
 	//测试代码完整逻辑,可重复执行
 	@Test
 	public void testSeckillLogic() {
-		long id=10011;
+		long id=1001;
 		Exposer exposer = seckillService.exportSeckillUrl(id);
 		if(exposer.isExposed()) {
 			System.out.println(exposer);
@@ -52,14 +52,12 @@ public class SeckillServiceImplTest extends BaseJunit4Test {
 	public void testExecuteSeckill() {
 		SeckillExecution seckillExecution = null;
 		try {
-			seckillExecution = seckillService.executeSeckill((long) 1000, 1, seckillService.exportSeckillUrl((long) 1000).getMd5());
+			seckillExecution = seckillService.executeSeckill((long) 1003, 133, seckillService.exportSeckillUrl((long) 1003).getMd5());
 		} catch (SeckillCloseException e) {
 			e.printStackTrace();
 		} catch (RepeatKillException e) {
 			e.printStackTrace();
-		}
-		Assert.notNull(seckillExecution, "must not null");
-		 SeckillExecution seckill = seckillService.executeSeckill((long) 1000, 1, "abc123");
+		};
 		 
 	}
 

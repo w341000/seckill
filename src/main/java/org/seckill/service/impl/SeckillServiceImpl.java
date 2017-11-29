@@ -3,6 +3,8 @@ package org.seckill.service.impl;
 import java.util.Date;
 import java.util.List;
 import javax.annotation.Resource;
+
+import org.seckill.dao.JedisClient;
 import org.seckill.dto.Exposer;
 import org.seckill.dto.SeckillExecution;
 import org.seckill.enums.SeckillStateEnum;
@@ -15,11 +17,13 @@ import org.seckill.pojo.Seckill;
 import org.seckill.pojo.SeckillExample;
 import org.seckill.pojo.SuccessKilled;
 import org.seckill.service.SeckillService;
+import org.seckill.utils.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.DigestUtils;
+import org.springframework.util.StringUtils;
 
 @Service
 public class SeckillServiceImpl implements SeckillService {
@@ -30,6 +34,10 @@ public class SeckillServiceImpl implements SeckillService {
 	private SuccessKilledMapper successKilledMapper;
 	// md5混淆
 	private final String slat = "adwadwa2342!@#$%^&185~";
+	
+	private static final String SECKILL_REDIS_KEY="seckill:";
+	@Resource
+	private JedisClient jedisClient;
 
 	@Override
 	public List<Seckill> getSeckillList() {
@@ -45,7 +53,7 @@ public class SeckillServiceImpl implements SeckillService {
 
 	@Override
 	public Exposer exportSeckillUrl(Long seckillId) {
-		Seckill seckill = seckillMapper.selectByPrimaryKey(seckillId);
+		Seckill seckill=getSeckill(seckillId);
 		if (seckill == null) {
 			return new Exposer(false, seckillId);
 		}
@@ -58,6 +66,29 @@ public class SeckillServiceImpl implements SeckillService {
 		// 转换特点字符串
 		String md5 = getMD5(seckillId);
 		return new Exposer(true, md5, seckillId);
+	}
+	/**
+	 * 从缓存获取秒杀商品
+	 */
+	private Seckill getSeckill(Long seckillId) {
+		try {
+			String json = jedisClient.get(SECKILL_REDIS_KEY+seckillId);//
+			Seckill seckill=null;
+			if(StringUtils.isEmpty(json)) {//miss from cache
+				seckill = seckillMapper.selectByPrimaryKey(seckillId);
+				if(seckill!=null) {
+					jedisClient.set(SECKILL_REDIS_KEY+seckillId, JsonUtils.objectToJson(seckill));//放入redis缓存
+					int timeout=60*60;
+					jedisClient.expire(SECKILL_REDIS_KEY+seckillId, timeout);//设置过期时间
+				}
+				return seckill;
+			}
+			seckill = JsonUtils.jsonToPojo(json, Seckill.class);
+			return seckill;
+		} catch (Exception e) {
+			logger.debug("can not get seckill  cause:"+e.getMessage());
+		}
+		return null;
 	}
 
 	private String getMD5(Long seckillId) {
@@ -79,7 +110,7 @@ public class SeckillServiceImpl implements SeckillService {
 			throws SeckillException, SeckillCloseException, RepeatKillException {
 
 		if (md5 == null || !md5.equals(getMD5(seckillId))) {// md5不符合
-			throw new SeckillException("seckill data error");
+			throw new SeckillException("数据被篡改");
 		}
 		if(successKilledMapper.selectByPrimaryKey(seckillId, userPhone)!=null) {
 			throw new RepeatKillException("重复秒杀");
@@ -87,17 +118,14 @@ public class SeckillServiceImpl implements SeckillService {
 		try {
 			// 执行秒杀逻辑:库存-1 记录购买行为
 			Date now = new Date();
-			int updateRows = seckillMapper.reduceNumber(seckillId, now);
-			if (updateRows <= 0) {// 秒杀结束
-				throw new SeckillCloseException("秒杀结束");
-			} else {
-				// 记录购买行为
-					successKilledMapper.insert(new SuccessKilled(seckillId, userPhone, (byte) 0));
-					
-					SuccessKilled successKilled = successKilledMapper.selectByIdWithSeckill(seckillId, userPhone);
-					return new SeckillExecution(seckillId, SeckillStateEnum.SUCCESS, successKilled);//success
-				
-			}
+			// 记录购买行为
+			successKilledMapper.insert(new SuccessKilled(seckillId, userPhone, (byte) 0));
+			int updateRows = seckillMapper.reduceNumber(seckillId, now);//减库存,热点商品竞争
+			if (updateRows <= 0) {	
+				throw new SeckillCloseException("秒杀结束");//秒杀结束,回滚事物
+			}  
+			SuccessKilled successKilled = successKilledMapper.selectByIdWithSeckill(seckillId, userPhone);
+			return new SeckillExecution(seckillId, SeckillStateEnum.SUCCESS, successKilled);//success,commit
 		} catch (SeckillCloseException e) {
 			throw e;
 		} catch (Exception e) {
