@@ -71,24 +71,36 @@ public class SeckillServiceImpl implements SeckillService {
 	 * 从缓存获取秒杀商品
 	 */
 	private Seckill getSeckill(Long seckillId) {
+		Seckill seckill=null;
+		seckill=getFromCache(seckillId);
+		if(seckill==null) {//miss from cache
+			seckill = seckillMapper.selectByPrimaryKey(seckillId);
+			putToCache(seckill);
+		}
+		return seckill;
+		 
+	}
+	//从缓存中取
+	private Seckill getFromCache(Long seckillId) {
 		try {
-			String json = jedisClient.get(SECKILL_REDIS_KEY+seckillId);//
-			Seckill seckill=null;
-			if(StringUtils.isEmpty(json)) {//miss from cache
-				seckill = seckillMapper.selectByPrimaryKey(seckillId);
-				if(seckill!=null) {
-					jedisClient.set(SECKILL_REDIS_KEY+seckillId, JsonUtils.objectToJson(seckill));//放入redis缓存
-					int timeout=60*60;
-					jedisClient.expire(SECKILL_REDIS_KEY+seckillId, timeout);//设置过期时间
-				}
-				return seckill;
+			String json= jedisClient.get(SECKILL_REDIS_KEY+seckillId);//先从缓存取
+			return  StringUtils.isEmpty(json)?null:JsonUtils.jsonToPojo(json, Seckill.class);
+		}catch (Exception e) {
+			logger.debug("can not get seckill  cause:"+e.getMessage());
+			return null;
+		}
+	}
+	//放入缓存
+	private void putToCache(Seckill seckill) {
+		try {
+			if(seckill!=null) {
+				jedisClient.set(SECKILL_REDIS_KEY+seckill.getSeckillId(), JsonUtils.objectToJson(seckill));//放入redis缓存
+				int timeout=60*60;
+				jedisClient.expire(SECKILL_REDIS_KEY+seckill.getSeckillId(), timeout);//设置过期时间
 			}
-			seckill = JsonUtils.jsonToPojo(json, Seckill.class);
-			return seckill;
-		} catch (Exception e) {
+		}catch (Exception e) {
 			logger.debug("can not get seckill  cause:"+e.getMessage());
 		}
-		return null;
 	}
 
 	private String getMD5(Long seckillId) {
@@ -132,6 +144,12 @@ public class SeckillServiceImpl implements SeckillService {
 			logger.error(e.getMessage(), e);
 			throw new SeckillException("Seckill inner exception:" + e.getMessage(), e);
 		}
+	}
+
+	@Override
+	@Transactional
+	public void save(Seckill seckill) {
+		seckillMapper.insert(seckill);
 	}
 
 }

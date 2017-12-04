@@ -16,7 +16,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.CookieValue;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
@@ -92,5 +94,20 @@ public class SeckillController {
 		public SeckillResult<Long> time() {
 			Date now=new Date();
 			return new SeckillResult<>(true, now.getTime());
+		}
+		
+		/**
+		 * 获取增加秒杀商品的页面
+		 * @return
+		 */
+		@GetMapping("/add")
+		public String getAddView() {
+			return "add";
+		}
+		
+		@PostMapping("/add")
+		public String saveSeckill(Seckill seckill) {
+			seckillService.save(seckill);
+			return "redirect:/seckill/list";
 		}
 }
